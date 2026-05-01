@@ -11,29 +11,39 @@ jobs:
       - name: Checkout Source Code
         uses: actions/checkout@v4
 
+      - name: Debug File Structure
+        run: |
+          echo "Checking root folder:"
+          ls -la
+          echo "Checking arch/arm64/configs:"
+          ls -la arch/arm64/configs/ || true
+
       - name: Setup Toolchain
         run: |
+          set -x
           sudo apt-get update
           sudo apt-get install -y gcc-aarch64-linux-gnu gcc-arm-linux-gnueabi libssl-dev build-essential bc bison flex libelf-dev
 
       - name: Install KernelSU-Next
         run: |
+          set -x
           curl -LSs "https://raw.githubusercontent.com/rifsxd/KernelSU-Next/main/kernel/setup.sh" | bash -
 
       - name: Build Kernel
         run: |
+          set -x
           export ARCH=arm64
           export CROSS_COMPILE=aarch64-linux-gnu-
           export CROSS_COMPILE_ARM32=arm-linux-gnueabi-
           
-          # Kiểm tra danh sách file config có sẵn trong thư mục
-          ls -la arch/arm64/configs/begonia*
-          
           # Tự động tìm và áp dụng file config phù hợp
           if [ -f arch/arm64/configs/begonia_user_defconfig ]; then
             make O=out begonia_user_defconfig
-          else
+          elif [ -f arch/arm64/configs/begonia_defconfig ]; then
             make O=out begonia_defconfig
+          else
+            echo "Không tìm thấy file config cho begonia!"
+            exit 1
           fi
           
           # Tiến hành biên dịch
